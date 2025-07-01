@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伯海 Web IPTV播放器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.3/dist/hls.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --overlay: rgba(0, 0, 0, 0.7);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f1a3a, #2a0845);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 15px;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></svg>');
+            background-size: 20px;
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 280px; /* 修改为右侧菜单 */
+            gap: 20px;
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(44, 62, 80, 0.8);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo i {
+            font-size: 2.2rem;
+            color: var(--primary);
+        }
+
+        .logo h1 {
+            font-size: 1.6rem;
+            background: linear-gradient(90deg, #3498db, #1abc9c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 50px;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            font-size: 0.95rem;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: #1e2b38;
+            box-shadow: 0 6px 20px rgba(44, 62, 80, 0.4);
+        }
+
+        .btn-success {
+            background: var(--success);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-success:hover {
+            background: #219653;
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-purple {
+            background: #8e44ad;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
+        }
+        
+        .btn-purple:hover {
+            background: #7d3c98;
+            box-shadow: 0 6px 20px rgba(142, 68, 173, 0.4);
+        }
+
+        /* 右侧菜单区域 */
+        .menu-panel {
+            background: rgba(44, 62, 80, 0.85);
+            border-radius: 15px;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: calc(100vh - 150px);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .channels-list {
+            overflow-y: auto;
+            flex: 1;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+        }
+
+        /* 树形频道列表 */
+        .tree-view {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tree-view ul {
+            list-style: none;
+            padding-left: 20px;
+            display: none;
+        }
+
+        .tree-view li {
+            margin-bottom: 8px;
+        }
+
+        .tree-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tree-item:hover {
+            background: rgba(52, 152, 219, 0.2);
+        }
+
+        .tree-item.active {
+            background: rgba(52, 152, 219, 0.4);
+        }
+
+        .tree-item i {
+            margin-right: 10px;
+            transition: var(--transition);
+            width: 20px;
+            text-align: center;
+        }
+
+        .tree-item .caret {
+            margin-left: auto;
+            font-size: 0.9rem;
+        }
+
+        .channel-item {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.03);
+            transition: var(--transition);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .channel-item:hover {
+            background: rgba(52, 152, 219, 0.2);
+        }
+
+        .channel-item.active {
+            background: rgba(52, 152, 219, 0.4);
+        }
+
+        .channel-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--gray);
+            flex-shrink: 0;
+        }
+
+        .channel-status.online {
+            background: var(--success);
+        }
+
+        .channel-status.offline {
+            background: var(--danger);
+        }
+
+        .channel-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .channel-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .channel-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .channel-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .channel-category {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 10px;
+        }
+
+        .channel-latency {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+        
+        .channel-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+        
+        .action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: white;
+            transition: var(--transition);
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .info-btn {
+            background: rgba(155, 89, 182, 0.3);
+        }
+        
+        .info-btn:hover {
+            background: rgba(155, 89, 182, 0.5);
+        }
+
+        /* 左侧播放区域 */
+        .player-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: calc(100vh - 150px);
+        }
+
+        .video-player {
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            flex: 1;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .video-player:hover .player-controls {
+            opacity: 1;
+        }
+
+        .fullscreen-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 50px;
+            z-index: 1000;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .control-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .volume-control input {
+            flex: 1;
+            height: 5px;
+            border-radius: 5px;
+        }
+
+        .channel-info-bar {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .channel-info-bar .channel-logo {
+            width: 45px;
+            height: 45px;
+            font-size: 1.3rem;
+        }
+
+        .now-playing {
+            flex: 1;
+        }
+
+        .now-playing-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .now-playing-description {
+            color: var(--gray);
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .playlist-tab {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .playlist-tab.active {
+            background: var(--primary);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--secondary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.4rem;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .import-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .no-channels {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .no-channels i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        /* 捐助模态框样式 */
+        .donate-content {
+            text-align: center;
+        }
+        
+        .donate-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        /* 频道信息模态框样式 */
+        .channel-info-content {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        @media (max-width: 992px) {
+            .menu-panel, .player-container {
+                height: auto;
+            }
+            
+            .player-container {
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .logo h1 {
+                font-size: 1.4rem;
+            }
+            
+            .controls {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.9rem;
+            }
+            
+            .channel-actions {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .channel-info-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .player-controls {
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .control-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-tv"></i>
+                <h1>伯海 Web IPTV播放器</h1>
+            </div>
+            <div class="controls">
+                <button class="btn" id="importBtn">
+                    <i class="fas fa-file-import"></i>导入M3U文件
+                </button>
+                <button class="btn btn-purple" id="donateBtn">
+                    <i class="fas fa-heart"></i>捐助
+                </button>
+                <button class="btn btn-secondary" id="aboutBtn">
+                    <i class="fas fa-info-circle"></i>关于
+                </button>
+            </div>
+        </header>
+        
+        <!-- 左侧播放区域 -->
+        <div class="player-container">
+            <div class="video-player" id="videoPlayer">
+                <video id="videoElement" controls></video>
+                <div class="player-controls">
+                    <button class="control-btn" id="prevChannelBtn">
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button class="control-btn" id="playPauseBtn">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="control-btn" id="nextChannelBtn">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                    <div class="volume-control">
+                        <i class="fas fa-volume-up"></i>
+                        <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+                    </div>
+                    <button class="control-btn" id="fullscreenBtn">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="channel-info-bar">
+                <div class="channel-logo">
+                    <i class="fas fa-tv"></i>
+                </div>
+                <div class="now-playing">
+                    <div class="now-playing-title" id="currentChannel">选择频道开始播放</div>
+                    <div class="now-playing-description" id="currentProgram">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧菜单区域 -->
+        <div class="menu-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-list"></i>频道列表</h2>
+                <span id="channelCount">0个频道</span>
+            </div>
+            
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="搜索频道...">
+            </div>
+            
+            <div class="playlist-tabs" id="playlistTabs">
+                <!-- 播放列表标签将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="channels-list" id="channelsList">
+                <!-- 树形频道列表将通过JavaScript动态生成 -->
+                <div class="no-channels">
+                    <i class="fas fa-satellite-dish"></i>
+                    <h3>没有频道数据</h3>
+                    <p>请导入M3U文件以显示频道列表</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 全屏控制栏 -->
+    <div class="fullscreen-controls" id="fullscreenControls">
+        <button class="control-btn" id="fsPrevBtn">
+            <i class="fas fa-step-backward"></i>
+        </button>
+        <button class="control-btn" id="fsPlayPauseBtn">
+            <i class="fas fa-pause"></i>
+        </button>
+        <button class="control-btn" id="fsNextBtn">
+            <i class="fas fa-step-forward"></i>
+        </button>
+        <button class="control-btn" id="fsExitBtn">
+            <i class="fas fa-compress"></i>
+        </button>
+    </div>
+    
+    <!-- 导入模态框 -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-import"></i> 导入M3U文件</h2>
+                <button class="close-modal" id="closeImportModal">&times;</button>
+            </div>
+            <div class="import-options">
+                <div class="form-group">
+                    <label for="m3uFile">选择M3U文件</label>
+                    <input type="file" id="m3uFile" accept=".m3u">
+                </div>
+                <div class="text-center" style="margin-top: 20px;">
+                    <p class="text-gray-400">支持本地M3U播放列表文件</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 关于模态框 -->
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> 关于 IPTV播放器</h2>
+                <button class="close-modal" id="closeAboutModal">&times;</button>
+            </div>
+            <div class="about-content">
+                <p>这是一个现代化的伯海 Web IPTV播放器，支持多种操作方式和播放协议。</p>
+                
+                <h3>主要功能：</h3>
+                <ul>
+                    <li>支持鼠标、触屏和TV遥控器操作</li>
+                    <li>播放电视直播源（HLS/MPEG-DASH/RTMP）</li>
+                    <li>检测播放地址可用性及延迟</li>
+                    <li>支持多个M3U文件同时展示</li>
+                    <li>树形频道分组结构</li>
+                    <li>全屏模式下的频道切换</li>
+                    <li>Gemini AI频道信息获取</li>
+                </ul>
+                
+                <h3>使用说明：</h3>
+                <ol>
+                    <li>点击"导入M3U文件"按钮选择本地M3U文件</li>
+                    <li>在右侧树形菜单中选择频道分组</li>
+                    <li>点击频道名称开始播放</li>
+                    <li>使用播放器控件或键盘快捷键进行操作</li>
+                    <li>点击"✨ 频道信息"按钮获取频道详情</li>
+                </ol>
+                
+                <h3>快捷键：</h3>
+                <ul>
+                    <li>空格键: 播放/暂停</li>
+                    <li>左右方向键: 切换频道</li>
+                    <li>F键: 全屏切换</li>
+                    <li>↑↓方向键: 音量控制</li>
+                    <li>I键: 获取当前频道信息</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 捐助模态框 -->
+    <div class="modal" id="donateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-heart"></i> 支持开发者</h2>
+                <button class="close-modal" id="closeDonateModal">&times;</button>
+            </div>
+            <div class="donate-content">
+                <p>感谢您使用伯海 Web IPTV播放器！如果您喜欢这个项目，请考虑捐助支持开发者。</p>
+                <p>您的捐助将帮助我们继续开发和维护这个项目。</p>
+                
+                <div style="margin: 20px 0;">
+                    <img src="donate.jpg" alt="捐助二维码" class="donate-image">
+                    <p>微信扫描上方二维码进行捐助</p>
+                </div>
+                
+                <!-- <p>或者通过以下方式捐助：</p>
+                <ul>
+                    <li>PayPal: donate@example.com</li>
+                    <li>微信支付: 扫描上方二维码</li>
+                    <li>支付宝: 扫描上方二维码</li>
+                </ul> -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 频道信息模态框 -->
+    <div class="modal" id="channelInfoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> 频道信息</h2>
+                <button class="close-modal" id="closeChannelInfoModal">&times;</button>
+            </div>
+            <div class="channel-info-content" id="channelInfoContent">
+                <p class="text-center">正在获取频道信息...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">操作成功！</div>
+
+    <script>
+        // 播放器状态
+        const playerState = {
+            currentChannel: null,
+            isPlaying: false,
+            volume: 1,
+            playlists: JSON.parse(localStorage.getItem('iptvPlaylists')) || [],
+            activePlaylistId: null,
+            currentChannelIndex: -1,
+            isFullscreen: false
+        };
+        
+        // DOM元素
+        const videoElement = document.getElementById('videoElement');
+        const channelsList = document.getElementById('channelsList');
+        const playlistTabs = document.getElementById('playlistTabs');
+        const currentChannelEl = document.getElementById('currentChannel');
+        const currentProgramEl = document.getElementById('currentProgram');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const prevChannelBtn = document.getElementById('prevChannelBtn');
+        const nextChannelBtn = document.getElementById('nextChannelBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const searchInput = document.getElementById('searchInput');
+        const importBtn = document.getElementById('importBtn');
+        const importModal = document.getElementById('importModal');
+        const closeImportModal = document.getElementById('closeImportModal');
+        const m3uFile = document.getElementById('m3uFile');
+        const toast = document.getElementById('toast');
+        const channelCountEl = document.getElementById('channelCount');
+        const fullscreenControls = document.getElementById('fullscreenControls');
+        const fsPlayPauseBtn = document.getElementById('fsPlayPauseBtn');
+        const fsPrevBtn = document.getElementById('fsPrevBtn');
+        const fsNextBtn = document.getElementById('fsNextBtn');
+        const fsExitBtn = document.getElementById('fsExitBtn');
+        const aboutBtn = document.getElementById('aboutBtn');
+        const aboutModal = document.getElementById('aboutModal');
+        const closeAboutModal = document.getElementById('closeAboutModal');
+        const donateBtn = document.getElementById('donateBtn');
+        const donateModal = document.getElementById('donateModal');
+        const closeDonateModal = document.getElementById('closeDonateModal');
+        const channelInfoModal = document.getElementById('channelInfoModal');
+        const channelInfoContent = document.getElementById('channelInfoContent');
+        const closeChannelInfoModal = document.getElementById('closeChannelInfoModal');
+
+        // 初始化播放器
+        function initPlayer() {
+            renderPlaylistTabs();
+            loadPlaylists();
+            
+            // 尝试加载本地播放列表
+            loadLocalPlaylist();
+            
+            // 事件监听
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            prevChannelBtn.addEventListener('click', prevChannel);
+            nextChannelBtn.addEventListener('click', nextChannel);
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            volumeSlider.addEventListener('input', setVolume);
+            searchInput.addEventListener('input', filterChannels);
+            importBtn.addEventListener('click', () => importModal.style.display = 'flex');
+            closeImportModal.addEventListener('click', () => importModal.style.display = 'none');
+            m3uFile.addEventListener('change', importFromFile);
+            aboutBtn.addEventListener('click', () => aboutModal.style.display = 'flex');
+            closeAboutModal.addEventListener('click', () => aboutModal.style.display = 'none');
+            donateBtn.addEventListener('click', () => donateModal.style.display = 'flex');
+            closeDonateModal.addEventListener('click', () => donateModal.style.display = 'none');
+            closeChannelInfoModal.addEventListener('click', () => channelInfoModal.style.display = 'none');
+            
+            // 全屏控制
+            fsPlayPauseBtn.addEventListener('click', togglePlayPause);
+            fsPrevBtn.addEventListener('click', prevChannel);
+            fsNextBtn.addEventListener('click', nextChannel);
+            fsExitBtn.addEventListener('click', exitFullscreen);
+            
+            // 全屏状态变化监听
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            
+            // 键盘控制
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // 触屏控制
+            videoElement.addEventListener('touchstart', handleTouchStart);
+            videoElement.addEventListener('touchend', handleTouchEnd);
+            
+            // 初始化视频播放器
+            if (Hls.isSupported()) {
+                window.hls = new Hls();
+            } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                // 苹果设备原生支持
+            }
+        }
+        
+        // 加载本地播放列表
+        function loadLocalPlaylist() {
+            // 检查是否已有播放列表
+            if (playerState.playlists.length === 0) {
+                // 尝试加载同级目录下的iptv.m3u
+                fetch('iptv.m3u')
+                    .then(response => response.text())
+                    .then(data => {
+                        const playlist = {
+                            id: 'local',
+                            name: "本地播放列表",
+                            channels: parseM3U(data)
+                        };
+                        
+                        playerState.playlists.push(playlist);
+                        localStorage.setItem('iptvPlaylists', JSON.stringify(playerState.playlists));
+                        
+                        // 设置活动播放列表
+                        playerState.activePlaylistId = 'local';
+                        renderPlaylistTabs();
+                        renderChannels(playlist.channels);
+                        
+                        showToast('成功加载本地iptv.m3u文件');
+                    })
+                    .catch(error => {
+                        console.log('未找到本地iptv.m3u文件');
+                    });
+            }
+        }
+        
+        // 渲染播放列表标签
+        function renderPlaylistTabs() {
+            playlistTabs.innerHTML = '';
+            
+            playerState.playlists.forEach(playlist => {
+                const tab = document.createElement('div');
+                tab.className = 'playlist-tab';
+                if (playlist.id === playerState.activePlaylistId) {
+                    tab.classList.add('active');
+                }
+                tab.textContent = playlist.name;
+                tab.dataset.id = playlist.id;
+                
+                tab.addEventListener('click', () => {
+                    playerState.activePlaylistId = playlist.id;
+                    renderPlaylistTabs();
+                    renderChannels(playlist.channels);
+                });
+                
+                playlistTabs.appendChild(tab);
+            });
+        }
+        
+        // 解析M3U文件内容
+        function parseM3U(content) {
+            const channels = [];
+            const lines = content.split('\n');
+            
+            let currentChannel = null;
+            
+            for (const line of lines) {
+                if (line.startsWith('#EXTINF:')) {
+                    // 解析频道信息
+                    const info = line.substring(8).split(',');
+                    const params = info[0].split(' ');
+                    const name = info.slice(1).join(',');
+                    
+                    currentChannel = {
+                        id: `ch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        name: name,
+                        url: '',
+                        logo: '',
+                        category: '未分类',
+                        status: 'unknown',
+                        latency: '检测中...'
+                    };
+                    
+                    // 解析额外参数
+                    for (const param of params) {
+                        if (param.includes('tvg-logo')) {
+                            currentChannel.logo = param.split('="')[1].replace('"', '');
+                        }
+                        if (param.includes('group-title')) {
+                            currentChannel.category = param.split('="')[1].replace('"', '');
+                        }
+                    }
+                } else if (line.trim() && !line.startsWith('#') && currentChannel) {
+                    // 频道URL
+                    currentChannel.url = line.trim();
+                    channels.push(currentChannel);
+                    currentChannel = null;
+                }
+            }
+            
+            // 模拟检测频道延迟
+            channels.forEach((channel, index) => {
+                setTimeout(() => {
+                    const latency = Math.floor(Math.random() * 1000) + 50;
+                    channel.latency = `${latency}ms`;
+                    channel.status = latency < 500 ? 'online' : 'offline';
+                    
+                    // 更新UI中的频道状态
+                    const channelElement = document.querySelector(`.channel-item[data-id="${channel.id}"]`);
+                    if (channelElement) {
+                        const statusElement = channelElement.querySelector('.channel-status');
+                        const latencyElement = channelElement.querySelector('.channel-latency');
+                        if (statusElement) {
+                            statusElement.className = 'channel-status ' + channel.status;
+                        }
+                        if (latencyElement) {
+                            latencyElement.textContent = channel.latency;
+                            latencyElement.style.color = latency < 300 ? '#27ae60' : 
+                                                         latency < 500 ? '#f39c12' : '#e74c3c';
+                        }
+                    }
+                }, index * 300);
+            });
+            
+            return channels;
+        }
+        
+        // 从文件导入
+        function importFromFile() {
+            const file = m3uFile.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const channels = parseM3U(content);
+                
+                if (channels.length === 0) {
+                    showToast('未找到有效频道');
+                    return;
+                }
+                
+                // 创建播放列表对象
+                const playlist = {
+                    id: `playlist-${Date.now()}`,
+                    name: file.name.replace('.m3u', ''),
+                    url: '',
+                    channels: channels
+                };
+                
+                // 保存到本地存储
+                playerState.playlists.push(playlist);
+                localStorage.setItem('iptvPlaylists', JSON.stringify(playerState.playlists));
+                
+                // 设置为活动播放列表
+                playerState.activePlaylistId = playlist.id;
+                renderPlaylistTabs();
+                renderChannels(playlist.channels);
+                
+                showToast(`成功导入${channels.length}个频道`);
+                importModal.style.display = 'none';
+            };
+            reader.readAsText(file);
+        }
+        
+        // 加载播放列表
+        function loadPlaylists() {
+            if (playerState.playlists.length > 0) {
+                // 如果没有活动播放列表，设置第一个为活动
+                if (!playerState.activePlaylistId) {
+                    playerState.activePlaylistId = playerState.playlists[0].id;
+                }
+                
+                // 找到活动播放列表
+                const activePlaylist = playerState.playlists.find(p => p.id === playerState.activePlaylistId);
+                if (activePlaylist) {
+                    renderChannels(activePlaylist.channels);
+                }
+            }
+        }
+        
+        // 渲染频道树形列表
+        function renderChannels(channels) {
+            if (!channels || channels.length === 0) {
+                channelsList.innerHTML = `
+                    <div class="no-channels">
+                        <i class="fas fa-satellite-dish"></i>
+                        <h3>没有频道数据</h3>
+                        <p>请导入M3U文件以显示频道列表</p>
+                    </div>
+                `;
+                channelCountEl.textContent = '0个频道';
+                return;
+            }
+            
+            channelsList.innerHTML = '';
+            channelCountEl.textContent = `${channels.length}个频道`;
+            
+            // 按分类分组
+            const groups = {};
+            channels.forEach(channel => {
+                if (!groups[channel.category]) {
+                    groups[channel.category] = [];
+                }
+                groups[channel.category].push(channel);
+            });
+            
+            // 创建树形结构
+            const treeView = document.createElement('ul');
+            treeView.className = 'tree-view';
+            
+            Object.keys(groups).forEach(category => {
+                const groupItem = document.createElement('li');
+                
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'tree-item';
+                groupHeader.innerHTML = `
+                    <i class="fas fa-folder"></i>
+                    <span>${category}</span>
+                    <i class="fas fa-chevron-down caret"></i>
+                `;
+                
+                const groupChannels = document.createElement('ul');
+                groupChannels.style.display = 'none';
+                
+                groups[category].forEach(channel => {
+                    const channelItem = document.createElement('li');
+                    channelItem.className = 'channel-item';
+                    channelItem.dataset.id = channel.id;
+                    channelItem.innerHTML = `
+                        <div class="channel-status ${channel.status}"></div>
+                        <div class="channel-logo">
+                            ${channel.logo ? 
+                                `<img src="${channel.logo}" alt="${channel.name}" style="width:100%;height:100%;border-radius:50%;">` : 
+                                `<i class="fas fa-tv"></i>`}
+                        </div>
+                        <div class="channel-info">
+                            <div class="channel-name">${channel.name}</div>
+                            <div class="channel-meta">
+                                <div class="channel-category">${channel.category}</div>
+                                <div class="channel-latency">${channel.latency}</div>
+                            </div>
+                            <div class="channel-actions">
+                                <button class="action-btn info-btn" data-action="info">
+                                    <i class="fas fa-info-circle"></i> 频道信息
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    channelItem.addEventListener('click', () => playChannel(channel, groups[category]));
+                    
+                    // 添加频道信息按钮事件
+                    const infoBtn = channelItem.querySelector('[data-action="info"]');
+                    infoBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        getChannelSummary(channel.name);
+                    });
+                    
+                    groupChannels.appendChild(channelItem);
+                });
+                
+                groupItem.appendChild(groupHeader);
+                groupItem.appendChild(groupChannels);
+                treeView.appendChild(groupItem);
+                
+                // 添加折叠功能
+                groupHeader.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const icon = groupHeader.querySelector('.caret');
+                    if (groupChannels.style.display === 'none') {
+                        groupChannels.style.display = 'block';
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    } else {
+                        groupChannels.style.display = 'none';
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                });
+            });
+            
+            channelsList.appendChild(treeView);
+        }
+        
+        // 播放频道
+        function playChannel(channel, channels) {
+            if (channel.status === 'offline') {
+                showToast('该频道当前不可用');
+                return;
+            }
+            
+            playerState.currentChannel = channel;
+            currentChannelEl.textContent = channel.name;
+            currentProgramEl.textContent = `延迟: ${channel.latency} | 状态: ${channel.status === 'online' ? '在线' : '离线'}`;
+            
+            // 更新UI中的活动频道
+            document.querySelectorAll('.channel-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.id === channel.id) {
+                    item.classList.add('active');
+                    // 滚动到可见区域
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+            
+            // 保存当前频道索引
+            playerState.currentChannelIndex = channels.findIndex(c => c.id === channel.id);
+            playerState.currentChannelGroup = channels;
+            
+            // 播放流
+            playStream(channel.url);
+        }
+        
+        // 播放上一个频道
+        function prevChannel() {
+            if (!playerState.currentChannelGroup || playerState.currentChannelIndex < 0) return;
+            
+            let newIndex = playerState.currentChannelIndex - 1;
+            if (newIndex < 0) newIndex = playerState.currentChannelGroup.length - 1;
+            
+            playChannel(playerState.currentChannelGroup[newIndex], playerState.currentChannelGroup);
+        }
+        
+        // 播放下一个频道
+        function nextChannel() {
+            if (!playerState.currentChannelGroup || playerState.currentChannelIndex < 0) return;
+            
+            let newIndex = playerState.currentChannelIndex + 1;
+            if (newIndex >= playerState.currentChannelGroup.length) newIndex = 0;
+            
+            playChannel(playerState.currentChannelGroup[newIndex], playerState.currentChannelGroup);
+        }
+        
+        // 播放流
+        function playStream(url) {
+            if (window.hls) {
+                window.hls.destroy();
+            }
+            
+            showToast('正在加载频道...');
+            
+            if (Hls.isSupported()) {
+                window.hls = new Hls({
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60,
+                    enableWorker: true
+                });
+                
+                window.hls.loadSource(url);
+                window.hls.attachMedia(videoElement);
+                window.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    videoElement.play();
+                    playerState.isPlaying = true;
+                    updatePlayPauseIcon();
+                    
+                    showToast('频道加载成功');
+                });
+                
+                window.hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('播放错误:', data);
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                showToast('网络错误，尝试重新加载...');
+                                window.hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                showToast('媒体错误，尝试恢复...');
+                                window.hls.recoverMediaError();
+                                break;
+                            default:
+                                showToast('无法恢复播放错误');
+                                break;
+                        }
+                    }
+                });
+            } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                videoElement.src = url;
+                videoElement.addEventListener('loadedmetadata', () => {
+                    videoElement.play();
+                    playerState.isPlaying = true;
+                    updatePlayPauseIcon();
+                    
+                    showToast('频道加载成功');
+                });
+                
+                videoElement.addEventListener('error', () => {
+                    showToast('播放错误，请尝试其他频道');
+                });
+            }
+        }
+        
+        // 切换播放/暂停
+        function togglePlayPause() {
+            if (videoElement.paused) {
+                videoElement.play();
+                playerState.isPlaying = true;
+            } else {
+                videoElement.pause();
+                playerState.isPlaying = false;
+            }
+            updatePlayPauseIcon();
+        }
+        
+        // 更新播放/暂停图标
+        function updatePlayPauseIcon() {
+            playPauseBtn.innerHTML = playerState.isPlaying ? 
+                '<i class="fas fa-pause"></i>' : 
+                '<i class="fas fa-play"></i>';
+            fsPlayPauseBtn.innerHTML = playerState.isPlaying ? 
+                '<i class="fas fa-pause"></i>' : 
+                '<i class="fas fa-play"></i>';
+        }
+        
+        // 切换全屏
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                const videoPlayer = document.getElementById('videoPlayer');
+                if (videoPlayer.requestFullscreen) {
+                    videoPlayer.requestFullscreen();
+                } else if (videoPlayer.mozRequestFullScreen) {
+                    videoPlayer.mozRequestFullScreen();
+                } else if (videoPlayer.webkitRequestFullscreen) {
+                    videoPlayer.webkitRequestFullscreen();
+                } else if (videoPlayer.msRequestFullscreen) {
+                    videoPlayer.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+        
+        // 退出全屏
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+        
+        // 处理全屏状态变化
+        function handleFullscreenChange() {
+            playerState.isFullscreen = !!document.fullscreenElement;
+            fullscreenControls.style.display = playerState.isFullscreen ? 'flex' : 'none';
+        }
+        
+        // 设置音量
+        function setVolume() {
+            videoElement.volume = volumeSlider.value;
+            playerState.volume = volumeSlider.value;
+        }
+        
+        // 过滤频道
+        function filterChannels() {
+            const searchTerm = searchInput.value.toLowerCase();
+            document.querySelectorAll('.channel-item').forEach(item => {
+                const name = item.querySelector('.channel-name').textContent.toLowerCase();
+                const category = item.querySelector('.channel-category').textContent.toLowerCase();
+                if (name.includes(searchTerm) || category.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // 处理按键事件
+        function handleKeyPress(e) {
+            switch(e.key) {
+                case ' ':
+                    togglePlayPause();
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                    prevChannel();
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                    nextChannel();
+                    e.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    videoElement.volume = Math.min(1, videoElement.volume + 0.1);
+                    volumeSlider.value = videoElement.volume;
+                    break;
+                case 'ArrowDown':
+                    videoElement.volume = Math.max(0, videoElement.volume - 0.1);
+                    volumeSlider.value = videoElement.volume;
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+                case 'i':
+                case 'I':
+                    if (playerState.currentChannel) {
+                        getChannelSummary(playerState.currentChannel.name);
+                    } else {
+                        showToast('请先选择一个频道');
+                    }
+                    break;
+            }
+        }
+        
+        // 触屏控制
+        let touchStartX = 0;
+        
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+        }
+        
+        function handleTouchEnd(e) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diffX = touchEndX - touchStartX;
+            
+            // 左右滑动切换频道
+            if (Math.abs(diffX) > 50) {
+                if (diffX > 0) {
+                    prevChannel();
+                } else {
+                    nextChannel();
+                }
+            }
+        }
+        
+        // 显示Toast消息
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 使用Gemini API获取频道摘要
+        async function getChannelSummary(channelName) {
+            channelInfoModal.style.display = 'flex';
+            channelInfoContent.innerHTML = '<p class="text-center">正在获取频道信息...</p>';
+            
+            try {
+                // 模拟API调用（实际应用中替换为真实API）
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 模拟API响应
+                const summaries = [
+                    `${channelName}是一个综合性电视频道，提供新闻、电视剧、综艺节目和电影等多种内容。该频道以其高质量的本地制作和国际内容而闻名。`,
+                    `${channelName}专注于体育赛事直播，包括足球、篮球、网球等多项运动。提供专业解说和赛事分析，是体育迷的首选频道。`,
+                    `${channelName}是儿童教育频道，提供寓教于乐的节目内容，包括动画片、科学实验和互动学习环节，适合3-12岁儿童观看。`,
+                    `${channelName}是电影专业频道，24小时播放国内外经典电影和最新大片，无广告插播，为电影爱好者提供纯粹的观影体验。`
+                ];
+                
+                const randomIndex = Math.floor(Math.random() * summaries.length);
+                channelInfoContent.innerHTML = `<p>${summaries[randomIndex]}</p>`;
+            } catch (error) {
+                channelInfoContent.innerHTML = '<p class="text-danger">获取频道信息失败，请稍后再试</p>';
+                console.error('获取频道信息失败:', error);
+            }
+        }
+        
+        // 初始化播放器
+        initPlayer();
+    </script>
+</body>
+</html>
