@@ -128,7 +128,21 @@
 ---
 
 
-# 拉取子树更新
+### 拉取子树更新
 ```bash
 git subtree pull --prefix=m3u/kilvn  subtree-remote master --squash
+```
+
+### 多源更新
+```bash
+git remote set-url origin    https://gitee.com/czq1ac/bohaiwebiptv.git
+
+git push
+
+
+git remote set-url origin   https://github.com/Eric007chen/bohaiwebiptv.git
+
+
+git push
+
 ```
