@@ -1,0 +1,40 @@
+name: Daily Subtree Update
+
+on:
+  schedule:
+    # 每天 UTC 时间 00:00 运行（北京时间 08:00）
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 添加手动触发选项
+
+jobs:
+  update-subtree:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取所有历史记录，子树操作需要完整历史
+
+    - name: Set up Git identity
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+
+    - name: Update subtree
+      run: |
+        # 添加子树远程（如果尚未添加）
+        git remote add -f subtree-remote https://github.com/kilvn/m3u.git || true
+        
+        # 执行子树更新
+        git subtree pull --prefix=m3u/kilvn subtree-remote master --squash
+        
+        # 如果有更新则推送
+        if [[ $(git status --porcelain) ]]; then
+          git push
+        else
+          echo "No changes to push"
+        fi
+      env:
+        # 使用 GitHub Token 进行推送认证
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
