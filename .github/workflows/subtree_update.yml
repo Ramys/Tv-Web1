@@ -21,9 +21,18 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
+    - name: Add subtree remote
+      run: |
+        git remote add subtree-remote https://github.com/kilvn/iptv.git
+
+    - name: Add subtree (首次可用，已存在目录可跳过)
+      run: |
+        if [ ! -d "m3u/kilvn" ]; then
+          git subtree add --prefix=m3u/kilvn subtree-remote master --squash
+        fi
+
     - name: Update subtree
       run: |
-        # 拉取子树更新
         git subtree pull --prefix=m3u/kilvn subtree-remote master --squash
 
         # 如果有更新则推送
@@ -33,5 +42,4 @@ jobs:
           echo "No changes to push"
         fi
       env:
-        # 使用 GitHub Token 进行推送认证
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
