@@ -23,10 +23,9 @@ jobs:
 
     - name: Update subtree
       run: |
-
-        # 执行子树更新
+        # 拉取子树更新
         git subtree pull --prefix=m3u/kilvn subtree-remote master --squash
-        
+
         # 如果有更新则推送
         if [[ $(git status --porcelain) ]]; then
           git push
