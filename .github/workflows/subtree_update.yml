@@ -23,9 +23,7 @@ jobs:
 
     - name: Update subtree
       run: |
-        # 添加子树远程（如果尚未添加）
-        git remote add -f subtree-remote https://github.com/kilvn/m3u.git || true
-        
+
         # 执行子树更新
         git subtree pull --prefix=m3u/kilvn subtree-remote master --squash
         
