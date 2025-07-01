@@ -4,6 +4,13 @@
 
 伯海 Web IPTV播放器是一个基于浏览器的IPTV直播解决方案，支持多种流媒体协议和操作方式，提供简洁直观的用户界面，让您轻松享受电视直播体验。
 
+## 在线访问地址
+
+| **环境** | **访问地址**                                   |
+|----------|-----------------------------------------------|
+| 国内访问  | [https://tv.boxtrade.top/](https://tv.boxtrade.top/) |
+| 国外访问  | [https://eric007chen.github.io/bohaiwebiptv/](https://eric007chen.github.io/bohaiwebiptv/) |
+
 ## 主要功能
 
 - **多协议支持**：支持HLS、MPEG-DASH、RTMP等主流流媒体协议
