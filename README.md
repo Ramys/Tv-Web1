@@ -146,3 +146,24 @@ git remote set-url origin   https://github.com/Eric007chen/bohaiwebiptv.git
 git push
 
 ```
+
+
+
+
+## 捐助支持
+
+如果您喜欢这个项目并希望支持开发者持续改进，欢迎扫码捐助：
+
+![捐助二维码](donate.JPG)
+
+您的支持将帮助我们：
+- 持续维护和更新项目
+- 添加新功能和改进
+- 优化用户体验
+- 提供更好的技术支持
+
+支持方式：
+- 微信/支付宝：扫描上方二维码
+- PayPal：donate@example.com
+
+感谢您的支持！❤️
