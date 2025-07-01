@@ -8,8 +8,8 @@
 
 | **环境** | **访问地址**                                   |
 |----------|-----------------------------------------------|
-| 国内访问  | [https://tv.boxtrade.top/](https://tv.boxtrade.top/) |
-| 国外访问  | [https://eric007chen.github.io/bohaiwebiptv/](https://eric007chen.github.io/bohaiwebiptv/) |
+| 国内访问  | [http://tv.boxtrade.top/](http://tv.boxtrade.top/) |
+| 国外访问  | [http://iptv.boxtrade.top/](http://iptv.boxtrade.top/) |
 
 ## 主要功能
 
