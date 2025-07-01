@@ -125,3 +125,10 @@
 - 双仓库保持**定期同步**，确保代码一致性  
 
 
+---
+
+
+# 拉取子树更新
+```bash
+git subtree pull --prefix=m3u/kilvn  subtree-remote master --squash
+```
