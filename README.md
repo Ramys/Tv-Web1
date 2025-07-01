@@ -90,3 +90,38 @@
 - PayPal：donate@example.com
 
 感谢您的支持！❤️
+
+
+
+---
+
+### 📦 **项目源码托管**  
+渤海Web IPTV采用双平台开源托管策略，同时维护以下两个代码仓库以适配不同开发者需求：  
+
+| **平台**   | **仓库地址**                                      | **克隆命令**                              |
+|------------|--------------------------------------------------|------------------------------------------|
+| **Gitee**  | [https://gitee.com/czq1ac/bohaiwebiptv](https://gitee.com/czq1ac/bohaiwebiptv)  | `git clone https://gitee.com/czq1ac/bohaiwebiptv.git` |
+| **GitHub** | [https://github.com/Eric007chen/bohaiwebiptv](https://github.com/Eric007chen/bohaiwebiptv) | `git clone https://github.com/Eric007chen/bohaiwebiptv.git` |
+
+---
+
+### ⚙️ **代码获取与协作方式**  
+1. **直接克隆**  
+   通过上述表格中的`git clone`命令将仓库下载至本地，支持后续的代码审查与二次开发。  
+
+2. **仓库检索技巧**  
+   - 在GitHub/Gitee搜索栏输入 `bohaiwebiptv` 可直接定位项目  
+
+3. **协作开发建议**  
+   若需贡献代码，推荐：  
+   - **Fork仓库** → 本地修改 → 提交Pull Request  
+   - 使用 **Issues** 模块报告问题或提议新功能  
+
+---
+
+### 🌐 **多平台适配说明**  
+- **Gitee**：面向国内开发者，提供稳定的本地化访问及镜像同步  
+- **GitHub**：覆盖国际开发者社区，便于全球化协作与持续集成（CI/CD）  
+- 双仓库保持**定期同步**，确保代码一致性  
+
+
